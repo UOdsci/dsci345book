@@ -1,0 +1,25 @@
+---
+title: "Introduction"
+author: "Peter Ralph"
+---
+
+# Introduction {#sec-introduction}
+
+- motivation for understanding randomness
+- role of "statistics"
+- this book will give theoretical foundations
+- dive deep in a few directions so you have the skills to generalize
+- focus on simulation
+
+
+Dealing with data inevitably involves coming to terms with *randomness*.
+Learn things from data involves two things:
+measuring quantities of interest,
+and then figuring out what those measurements mean about the wider world.
+
+
+## Who is this book for
+
+- prerequisites: computing, math
+- you've got experience working with data
+- give you the skills to find, understand and evaluate new tools

@@ -1,0 +1,239 @@
+---
+title: "The Method of Moments"
+author: "Peter Ralph"
+---
+
+```{python}
+#| echo: false
+import numpy as np
+import scipy.stats
+import matplotlib.pyplot as plt
+rng = np.random.default_rng(seed=123)
+```
+
+# Fitting models, take 1: the Method of Moments {#sec-mom-overview}
+
+General idea and motivation:
+let's get something that looks like the data?
+Refer to example from Poisson approx
+
+Next we'll have a first look at the problem of *model fitting*:
+finding a probability model that describes in some reasonable way
+a given dataset.
+The "method of moments" is straightforward, conceptually:
+imagine making a histogram of some variable,
+comparing the histogram
+to the theoretical shape of some parametric family of distributions,
+and then adjusting the parameters until the theory "looks like" the data.
+The main question is: how to compare histograms?
+A convenient and pretty good answer is to choose parameters
+so that the mean and standard deviation match, say.
+That's the method of moments in a nutshell,
+although one can choose other summary statistics to match
+besides the mean and standard deviation.
+
+Let's start with an example:
+suppose that in a contact tracing epidemiology study
+we have recorded for thirty different people
+the number times over a week
+that they were in the same room as someone who sneezed.
+We're interested in modeling this distribution
+for a large-scale simulation study of epidemic spread
+(so, we'll need to generate a large number of random "sneezes"
+from a realistic distribution).
+The average number across the thirty people was 1.2 sneezes;
+@fig-num-sneezes shows the distribution of the data,
+compared a Poisson distribution with mean 1.2.
+
+```{python}
+#| label: fig-num-sneezes
+#| echo: false
+#| fig-cap: " The distribution of the number of sneezes observed across 30 people ('data') and the expected distribution from a Poisson having the same mean. "
+num_sneezes = rng.poisson(size=30, lam=rng.exponential(size=30) * 1.5)
+mean_sneezes = np.mean(num_sneezes)
+pred_num = len(num_sneezes) * scipy.stats.poisson.pmf(
+             np.arange(np.max(num_sneezes)+1),
+             mu=mean_sneezes
+)
+fig, ax = plt.subplots()
+ax.scatter(np.arange(np.max(num_sneezes)+1), np.bincount(num_sneezes),
+           label='data', marker="o")
+ax.scatter(np.arange(len(pred_num)), pred_num,
+           label=f'Poisson({mean_sneezes:.2})', marker="^")
+ax.legend()
+```
+
+The agreement in @fig-num-sneezes seems pretty good:
+the two histograms are in about the same place
+and have roughly the same shape.
+This is quite natural:
+our data have roughly the shape of a Poisson distribution,
+so matching means ensures a reasonable fit.
+
+What happened here?
+We have used the *method of moments* to fit a Poisson distribution to our data.
+(A *moment* of a random variable $X$ is a summary statistic
+of the form $\E[X^k]$; the term comes from physics.)
+Since the Poisson distribution has only one free parameter,
+we can only fit one moment; the obvious choice is to fit the mean.
+
+
+## Badness-of-fit: {#sec-badness-of-fit}
+
+The agreement in @fig-num-sneezes might not be surprising to you:
+the two look similar; well, of course they do?
+But, it's useful to think about what it *might* have looked like.
+Suppose that we did another study of a differentthirty people,
+shown in @fig-num-sneezes-2 --
+although we fit a Poisson distribution in just the same way
+(both distributions have the same mean!),
+the result is clearly not a good fit to the data,
+and a different model is needed
+(perhaps one where the mean of the Poisson depends on the person's place of work).
+
+```{python}
+#| label: fig-num-sneezes-2
+#| echo: false
+#| fig-cap: " The distribution of the number of sneezes observed across a different set of 30 people ('data') and the expected distribution from a Poisson having the same mean. Half of these people work in elementary schools, and the other half in small offices. "
+num_sneezes2 = rng.poisson(size=30, lam=np.repeat([0.5, 2.5], 15))
+mean_sneezes2 = np.mean(num_sneezes2)
+pred_num2 = len(num_sneezes2) * scipy.stats.poisson.pmf(
+             np.arange(np.max(num_sneezes2)+1),
+             mu=mean_sneezes2
+)
+fig, ax = plt.subplots()
+ax.scatter(np.arange(np.max(num_sneezes2)+1), np.bincount(num_sneezes2),
+           label='data', marker="o")
+ax.scatter(np.arange(len(pred_num2)), pred_num2,
+           label=f'Poisson({mean_sneezes2:.2})', marker="^")
+ax.legend()
+```
+
+
+## Example: kitten weights {#ex-kitten-weights}
+
+A veterinary clinic has recorded the weights of 50 healthy newborn kittens,
+which mostly weigh between 70 and 130 grams.
+Kittens weighing below 60 grams need extra attention,
+and we would like to use the data to predict what proportion of kittens
+in the long run will fall in this category.
+The histogram of the data in @fig-kitten-weights
+looks roughly Gaussian,
+so we try fitting a Gaussian.
+Since the Gaussian has two free parameters,
+we can use the Method of Moments
+to match both mean and standard deviation.
+This makes sense: we know that we can use the free parameters of the Gaussian
+to slide the distribution left and right (by adjusting the mean)
+and make the distribution wider and narrower (by adjusting the standard deviation).
+
+```{python}
+#| label: fig-kitten-weights
+#| echo: false
+#| fig-cap: " (left) Weights of 50 healthy newborn kittens, and (right) a Gaussian distribution with the same mean and standard deviation. "
+n = 50
+kittens = rng.normal(size=n, loc=100, scale=15)
+k_mean = np.mean(kittens)
+k_sd = np.std(kittens, ddof=1)
+x = np.linspace(65, 145, 51)
+k_pred = n * scipy.stats.norm.pdf(x, loc=100, scale=15)
+fig, ax = plt.subplots()
+ax.hist(kittens, label='data')
+ax.plot(x, k_pred, label='fitted')
+ax.set_xlabel("kitten weight (g)")
+ax.legend()
+```
+
+Using this, we can predict the proportion of kittens in the long run
+that will have weight below 60 grams, either by simulation:
+```{python}
+sim_kittens = rng.normal(size=1_000_000, loc=k_mean, scale=k_sd)
+prop_sim = np.mean( sim_kittens < 60 )
+print(f"Predicted proportion below 60g = {100*prop_sim:.2}%.")
+```
+or by theory:
+```{python}
+prop_theory = scipy.stats.norm.cdf(60, loc=k_mean, scale=k_sd)
+print(f"Predicted proportion below 60g = {100*prop_theory:.2}%.")
+```
+
+
+## Example: lightning {#ex-lightning-times}
+
+Meteorologists have recorded the time between successive lightning strikes
+in several large lightning storm,
+and would like to fit a distribution to this time
+for the purpose of comparing between storms.
+The data are in @fig-lightning.
+
+Consulting [Wikipedia](https://en.wikipedia.org/wiki/Gamma_distribution),
+a Gamma distribution with shape $k$ and scale $\theta$
+has mean $k \theta$ and standard deviation $\theta \sqrt{k}$.
+Let's call our observed mean $m$ and observed SD $s$;
+so we'd like to choose $k$ and $\theta$ so that
+$$\begin{aligned}
+    m &= k \theta \\
+    s &= \theta \sqrt{k} .
+\end{aligned}$$
+After looking at this a bit, the solution is
+$$\begin{aligned}
+    \theta &= s^2 / m , \\
+    k &= m / \theta = m^2 / s^2 .
+\end{aligned}$$
+Applying this to the data, we get the fit shown in @fig-lightning.
+
+```{python}
+#| label: fig-lightning
+#| echo: false
+#| fig-cap: " Intervals between successive lightning strikes, in seconds, during one storm. "
+n = 27
+lightning = np.round(rng.gamma(size=n, shape=3, scale=20), 1)
+l_mean = np.mean(lightning)
+l_sd = np.std(lightning, ddof=1)
+l_theta = l_sd**2 / l_mean
+l_k = l_mean**2 / l_sd**2
+x = np.linspace(0, 200, 201)
+l_pred = n * scipy.stats.gamma.pdf(x, l_k, scale=l_theta)
+
+fig, ax = plt.subplots()
+ax.hist(lightning, label='data')
+ax.plot(x, l_pred, label=f'Gamma(shape={l_k:.1}, scale={l_theta:.1})')
+ax.legend()
+
+print(f"Inter-lightning interval mean = {l_mean:.2}, SD = {l_sd:.2}")
+```
+
+
+
+## General strategies for using the Method of Moments {#sec-mom-recap}
+
+The Method of Moments is good because it's
+straightforward,
+easy to understand,
+and easy to check.
+If you need a quick-and-dirty fit to a single set of numbers,
+it's a good choice.
+Later we'll encounter another more popular method for finding matching distributions,
+*maximum likelihood*.
+Maximum likelihood often has better theoretical properties,
+but happily is often the *same* as the method of moments,
+and for most practical purposes gives very similar results.
+(And, if the two methods give quite different answers,
+this might be an indication of the model is not a good model!)
+
+Let's summarize how to apply the Method of Moments
+to obtain a generative model for a given dataset:
+
+1. Choose an appropriate distribution that is flexible enough to resemble the data.
+    For instance, if the data are all nonnegative numbers,
+    probably the distribution should only give nonnegative numbers as well.
+
+2. Choose which moments to match: as many as the distribution has free parameters.
+    For instance, if the distribution has two free parameters,
+    you probably want to match the mean and standard deviation.
+
+3. Calculate the moments from the dataset,
+    and then solve the equations to find the parameters of the distribution
+    that produces those expected moments.
+    Sometimes this is trivial (like when fitting a Normal using mean and standard deviation)
+    and sometimes this involves some math (like in our Gamma example).

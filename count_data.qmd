@@ -1,0 +1,119 @@
+---
+title: "Count data"
+author: "Peter Ralph"
+---
+
+# Count data: the Poisson distribution {#sec-poisson-distribution}
+
+<!--
+count data
+
+Binomial -> Poisson with examples
+-->
+
+A common type of data is "count data":
+nonnegative integers,
+that (usually) counts the nuber of times something happens.
+We are already familiar with one model for such data:
+if we try to do something $n$ times,
+the outcome of each trial is independent of the others,
+and the chance of "success" each time is $p$,
+then $N$, the number of successes, has a Binomal$(N,p)$ distribution,
+i.e.,
+$$
+    \P\{ N = k \}
+    =
+    \binom{n}{k} p^k (1-p)^{n-k}
+    \qquad \text{for } 0 \le k \le n .
+$$
+However, what values of $N$ and $p$ would we use to model,
+say, the number of dogs owned by a random person?
+The Poisson distribution gives us a useful building block
+for many other examples.
+
+Suppose we're monitoring a cosmic ray detector,
+through which high-energy particles pass on average once every 50 seconds.
+These particles originate outside of our solar system,
+and their arrivals are not correlated with each other at all
+(at least on a local scale).
+How many particles might we expect to observe over the course of 5 minutes?
+If we divide the 5 minutes up into 300 seconds,
+then $N$, the number of particles we observe,
+is equal to the number of those 300 seconds in which a particle arrived,
+unless it happened that two particles arrived in the same second.
+However, *this* number is Binomial: think of each second
+as a trial (so $n=300$), each with probability of success $p=1/50=0.02$
+(so that particles arrive at the right average rate).
+Using the Binomial probbility,
+$$
+    \P\{ N = k \}
+    \approx
+    \binom{300}{k} (.02)^k (.98)^{n-k} .
+$$
+However, our choice of dividing things into seconds seems arbitrary:
+what if we divided time up into *half* seconds?
+Then we'd have $n=600$ and $p=0.01$ and so
+$$
+    \P\{ N = k \}
+    \approx
+    \binom{600}{k} (.01)^k (.99)^{n-k} .
+$$
+This should be a *better* approximation, because the chance that two particles
+arrive in the same half second is smaller than the chance they arrive in the same second.
+If this is a sensible approximation,
+it shouldn't depend very much on our arbitrary choices.
+Let's check:
+
+TODO: plot of probability as a funciton of fraction of a second
+
+What's going on here? Well, it turns out that
+$$
+    (1 - x/n)^n \to e^{-x} \qquad \text{as } n \to \infty.
+$$
+In other words (and somewhat mroe generally),
+multiplying together a lot of things that are close to one
+is well-approximated by an exponential.
+Let's write the Binomial probability in terms of the sample size $n$
+and its *mean*, $\mu=np$.
+$$\begin{aligned}
+    \P\{ N = k \}
+    &=
+    \binom{n}{k} \left{\frac{\mu}{n}\right)^k \left(1 - \frac{\mu}{n}\right)^{n-k} \\
+    &=
+    \frac{n (n-1) \cdots (n-k+1)}{k!}
+        \frac{\mu^k}{n^k} \left(1 - \frac{\mu}{n}\right)^{n-k} .
+\end{aligned}$$
+(We used that $\binom{n}{k}  = \frac{n (n-1) \cdots (n-k+1)}{k!}$.)
+It should be believable that if $n$ is big and $k$ is not, then
+$$ 
+    \frac{n (n-1) \cdots (n-k+1)}{n^k}
+    = 1 \left(1 - \frac{1}{n}\right) \cdots
+        \left(1 - \frac{k-1}{n}\right)
+    \approx 1 ,
+$$
+and so
+$$\begin{aligned}
+    \P\{ N = k \}
+    \approx \frac{\mu^k}{k!} e^{-\mu} .
+\end{aligned}$$
+This is the *Poisson distribution*.
+
+
+## Example: defects
+
+motivate solar panel example
+
+
+## Overdispersion {#sec-overdispersion}
+
+Do calculation for mean and variance
+of a mixture-of-Poissons.
+
+## Example: defects #{ex-defects}
+
+pull in 'data' and see that it's overdispersed
+
+choose parameters, see it fits better
+
+
+
