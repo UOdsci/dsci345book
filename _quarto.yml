@@ -1,8 +1,12 @@
 project:
   type: book
+  execute-dir: file
+  output-dir: _book
+
 
 book:
   title: "Probability and Statistics for Data Science"
+  subtitle: "getting to grips with randomness"
   author: "Peter Ralph"
   chapters:
     - index.qmd
